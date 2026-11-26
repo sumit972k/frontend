@@ -36,10 +36,14 @@ export default function Home() {
         style={{ x: smoothX, y: smoothY, translateX: "-50%", translateY: "-50%" }}
       />
 
-      {/* Top Left Logo (Made Bigger) */}
-      <div className="absolute top-8 left-8 flex items-center gap-3 z-20">
-        <img src="/logo.png" alt="Aeris Logo" className="w-14 h-14 object-contain" />
-        <span className="text-3xl font-bold tracking-widest uppercase">Aeris</span>
+      {/* Top Left Logo (Larger & Blended) */}
+      <div className="absolute top-8 left-8 flex items-center gap-2 z-20">
+        <img 
+          src="/logo.png" 
+          alt="Aeris Logo" 
+          className="w-[72px] h-[72px] object-contain mix-blend-screen" 
+        />
+        <span className="text-4xl font-bold tracking-widest uppercase">Aeris</span>
       </div>
 
       <div className="relative z-10 text-center space-y-8 max-w-3xl mt-20">
@@ -59,7 +63,7 @@ export default function Home() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.1 }}
-          className="text-6xl md:text-8xl font-bold tracking-tighter"
+          className="text-5xl md:text-8xl font-bold tracking-tighter"
         >
           Connect beyond <br />
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-blue-400 to-purple-400 animate-gradient">
