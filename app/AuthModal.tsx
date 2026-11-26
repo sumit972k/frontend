@@ -61,13 +61,13 @@ export default function AuthModal({ isOpen, onClose }: { isOpen: boolean, onClos
         <>
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100]" />
           <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} transition={{ type: "spring", damping: 25, stiffness: 300 }} className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-[#111] border border-white/10 rounded-2xl p-8 z-[101] shadow-2xl">
-            <h2 className="text-2xl font-bold text-white mb-2">{isSignUp ? "Create Account" : "Welcome Back"}</h2>
-            <p className="text-gray-400 text-sm mb-6">{isSignUp ? "Join your campus network." : "Sign in to continue."}</p>
+            <h2 className="text-2xl font-bold text-white mb-2">{isSignUp ? "Create Account" : "Welcome to Aeris"}</h2>
+            <p className="text-gray-400 text-sm mb-6">{isSignUp ? "Join the private network." : "Sign in to continue."}</p>
 
             <form className="space-y-4" onSubmit={handleAuth}>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">College Email</label>
-                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@college.edu" required autoComplete="off" className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500 transition-colors" />
+                <label className="block text-sm font-medium text-gray-300 mb-1">Email</label>
+                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" required autoComplete="off" className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500 transition-colors" />
               </div>
               
               <div>
