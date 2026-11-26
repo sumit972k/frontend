@@ -144,7 +144,7 @@ export default function Dashboard() {
           
           {/* LOGO ADDED HERE */}
           <div className="flex items-center gap-2">
-            <img src="/logo.png" alt="Aeris Logo" className="w-8 h-8 object-contain" />
+            <img src="/logo.svg" alt="Aeris Logo" className="w-8 h-8 object-contain" />
             <h1 className="text-xl font-bold tracking-widest uppercase bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-blue-400">
               Aeris
             </h1>

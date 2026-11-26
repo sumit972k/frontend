@@ -36,12 +36,12 @@ export default function Home() {
         style={{ x: smoothX, y: smoothY, translateX: "-50%", translateY: "-50%" }}
       />
 
-      {/* Top Left Logo (Larger & Blended) */}
+      {/* Top Left Logo */}
       <div className="absolute top-8 left-8 flex items-center gap-2 z-20">
         <img 
-          src="/logo.png" 
+          src="/logo.svg" 
           alt="Aeris Logo" 
-          className="w-[72px] h-[72px] object-contain mix-blend-screen" 
+          className="w-[72px] h-[72px] object-contain" 
         />
         <span className="text-4xl font-bold tracking-widest uppercase">Aeris</span>
       </div>
@@ -71,7 +71,6 @@ export default function Home() {
           </span>
         </motion.h1>
         
-        {/* New Tagline */}
         <motion.p 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
