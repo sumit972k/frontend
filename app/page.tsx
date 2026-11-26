@@ -32,26 +32,27 @@ export default function Home() {
 
       {/* Interactive Background Glow */}
       <motion.div
-        className="absolute w-[600px] h-[600px] bg-purple-600/20 blur-[100px] rounded-full pointer-events-none"
+        className="absolute w-[600px] h-[600px] bg-purple-600/15 blur-[100px] rounded-full pointer-events-none"
         style={{ x: smoothX, y: smoothY, translateX: "-50%", translateY: "-50%" }}
       />
 
-      {/* Top Left Logo */}
+      {/* Top Left Logo (Made Bigger) */}
       <div className="absolute top-8 left-8 flex items-center gap-3 z-20">
-        <img src="/logo.png" alt="Aeris Logo" className="w-10 h-10 object-contain" />
-        <span className="text-2xl font-bold tracking-widest uppercase">Aeris</span>
+        <img src="/logo.png" alt="Aeris Logo" className="w-14 h-14 object-contain" />
+        <span className="text-3xl font-bold tracking-widest uppercase">Aeris</span>
       </div>
 
-      <div className="relative z-10 text-center space-y-8 max-w-3xl">
+      <div className="relative z-10 text-center space-y-8 max-w-3xl mt-20">
         
+        {/* Simplified Badge */}
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-md text-sm text-gray-300"
+          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-md text-xs text-gray-400 uppercase tracking-wider"
         >
-          <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-          Private Beta is Live
+          <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+          Private Beta
         </motion.div>
         
         <motion.h1 
@@ -66,13 +67,14 @@ export default function Home() {
           </span>
         </motion.h1>
         
+        {/* New Tagline */}
         <motion.p 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.2 }}
-          className="text-gray-400 text-lg md:text-xl max-w-xl mx-auto leading-relaxed"
+          className="text-gray-400 text-xl md:text-2xl font-medium max-w-xl mx-auto leading-relaxed"
         >
-          The private, encrypted social network built for real connections. No noise. No tracking. Just you and your circle.
+          Social, without the noise.
         </motion.p>
 
         <motion.div 

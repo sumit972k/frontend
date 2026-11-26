@@ -24,9 +24,12 @@ export default function MagneticButton({
     const { clientX, clientY } = e;
     const { height, width, left, top } = ref.current.getBoundingClientRect();
     
+    // Magnetic effect
     const middleX = clientX - (left + width / 2);
     const middleY = clientY - (top + height / 2);
     setPosition({ x: middleX * 0.3, y: middleY * 0.3 });
+
+    // Glow effect inside the button
     setMousePosition({ x: clientX - left, y: clientY - top });
   };
 
@@ -35,9 +38,11 @@ export default function MagneticButton({
     setIsHovered(false);
   };
 
-  const baseClass = "relative px-8 py-3 rounded-full font-semibold transition-colors overflow-hidden cursor-pointer";
+  // The hover:scale-105 adds the smooth grow effect you asked for
+  const baseClass = "relative px-8 py-3 rounded-full font-semibold transition-all duration-300 overflow-hidden cursor-pointer hover:scale-105 hover:shadow-[0_0_25px_rgba(168,85,247,0.3)]";
+  
   const styles = variant === "primary" 
-    ? "bg-white text-black hover:text-black" 
+    ? "bg-white text-black" 
     : "bg-white/10 border border-white/20 backdrop-blur-md text-white";
 
   return (
@@ -52,6 +57,7 @@ export default function MagneticButton({
       className={`${baseClass} ${styles} ${className}`}
       {...props}
     >
+      {/* The Spotlight Glow inside the button */}
       {isHovered && (
         <motion.div
           className="absolute pointer-events-none w-24 h-24 rounded-full blur-xl"
