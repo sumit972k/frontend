@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "College Connect",
-  description: "Your private, encrypted campus network.",
+  title: "Aeris — Connect beyond the ordinary",
+  description: "A private, encrypted social network built for real connections.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
