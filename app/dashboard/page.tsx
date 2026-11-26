@@ -141,9 +141,15 @@ export default function Dashboard() {
     <div className="min-h-screen bg-[#0a0a0a] text-white">
       <nav className="border-b border-white/10 bg-black/50 backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
-          <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-blue-400">
-            Connect
-          </h1>
+          
+          {/* LOGO ADDED HERE */}
+          <div className="flex items-center gap-2">
+            <img src="/logo.png" alt="Aeris Logo" className="w-8 h-8 object-contain" />
+            <h1 className="text-xl font-bold tracking-widest uppercase bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-blue-400">
+              Aeris
+            </h1>
+          </div>
+
           <div className="flex items-center gap-4">
             <span className="text-sm text-gray-300 font-medium">@{profile.username}</span>
             <button onClick={handleLogout} className="text-sm text-red-400 hover:text-red-300 transition-colors">

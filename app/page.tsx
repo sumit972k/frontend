@@ -36,10 +36,10 @@ export default function Home() {
         style={{ x: smoothX, y: smoothY, translateX: "-50%", translateY: "-50%" }}
       />
 
-      {/* Top Left Logo (Wordmark + Symbol) */}
+      {/* Top Left Logo */}
       <div className="absolute top-8 left-8 flex items-center gap-3 z-20">
-        <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-purple-500 to-blue-500 shadow-[0_0_20px_rgba(168,85,247,0.4)]" />
-        <span className="text-xl font-bold tracking-tight">Aeris</span>
+        <img src="/logo.png" alt="Aeris Logo" className="w-10 h-10 object-contain" />
+        <span className="text-2xl font-bold tracking-widest uppercase">Aeris</span>
       </div>
 
       <div className="relative z-10 text-center space-y-8 max-w-3xl">
