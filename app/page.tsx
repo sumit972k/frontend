@@ -27,7 +27,7 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-[#050505] text-white flex flex-col items-center justify-center p-4 relative overflow-hidden">
       
-      {/* Background Grid Pattern (Depth) */}
+      {/* Background Grid Pattern */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none" />
 
       {/* Interactive Background Glow */}
@@ -36,14 +36,10 @@ export default function Home() {
         style={{ x: smoothX, y: smoothY, translateX: "-50%", translateY: "-50%" }}
       />
 
-      {/* Top Left Logo */}
-      <div className="absolute top-8 left-8 flex items-center gap-2 z-20">
-        <img 
-          src="/logo.svg" 
-          alt="Aeris Logo" 
-          className="w-[72px] h-[72px] object-contain" 
-        />
-        <span className="text-4xl font-bold tracking-widest uppercase">Aeris</span>
+      {/* Top Left Logo (Original Gradient Circle) */}
+      <div className="absolute top-8 left-8 flex items-center gap-3 z-20">
+        <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-purple-500 to-blue-500 shadow-[0_0_20px_rgba(168,85,247,0.4)]" />
+        <span className="text-2xl font-bold tracking-widest uppercase">Aeris</span>
       </div>
 
       <div className="relative z-10 text-center space-y-8 max-w-3xl mt-20">
