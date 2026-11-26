@@ -142,10 +142,9 @@ export default function Dashboard() {
       <nav className="border-b border-white/10 bg-black/50 backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
           
-          {/* Logo (Original Gradient Circle) */}
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-purple-500 to-blue-500 shadow-[0_0_20px_rgba(168,85,247,0.4)]" />
-            <h1 className="text-xl font-bold tracking-widest uppercase bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-blue-400">
+          {/* Logo (Text Only) */}
+          <div className="flex items-center">
+            <h1 className="text-2xl font-bold tracking-widest uppercase bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-blue-400">
               Aeris
             </h1>
           </div>
