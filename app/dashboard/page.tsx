@@ -202,9 +202,9 @@ export default function Dashboard() {
           </div>
 
           {imagePreview && (
-            <div className="mt-3 relative w-full h-48 rounded-xl overflow-hidden border border-white/10 z-[10000]">
+            <div className="mt-3 relative w-full h-48 rounded-xl overflow-hidden border border-white/10">
               <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
-              <button onClick={() => { setImageFile(null); setImagePreview(null); }} className="absolute top-2 right-2 bg-black/60 text-white rounded-full p-1 text-xs hover:bg-black/80 z-[10001]">✕</button>
+              <button onClick={() => { setImageFile(null); setImagePreview(null); }} className="absolute top-2 right-2 bg-black/60 text-white rounded-full p-1 text-xs hover:bg-black/80">✕</button>
             </div>
           )}
 
@@ -241,7 +241,7 @@ export default function Dashboard() {
                 {post.content && <p className="text-gray-200 text-lg leading-relaxed mb-3">{post.content}</p>}
                 
                 {post.image_url && (
-                  <div className="mt-3 rounded-xl overflow-hidden border border-white/10 mb-4 relative z-[10000]">
+                  <div className="mt-3 rounded-xl overflow-hidden border border-white/10 mb-4">
                     <img src={post.image_url} alt="Post content" className="w-full h-auto max-h-[500px] object-cover" />
                   </div>
                 )}
