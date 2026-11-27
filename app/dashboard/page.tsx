@@ -28,7 +28,7 @@ export default function Dashboard() {
       } else {
         setUser(session.user);
         
-        // Check if they have a profile
+        // Fetch user profile
         const { data: profileData } = await supabase
           .from("profiles")
           .select("*")
@@ -37,7 +37,7 @@ export default function Dashboard() {
         
         setProfile(profileData);
         
-        // Fetch real posts
+        // Fetch all posts and join with the profiles table to get the username
         const { data: postsData } = await supabase
           .from("posts")
           .select("*, profiles(username)")
@@ -77,6 +77,8 @@ export default function Dashboard() {
     if (!newPost.trim()) return;
     
     setIsPosting(true);
+    
+    // Insert the new post
     const { data, error } = await supabase.from("posts").insert([
       { content: newPost, user_id: user.id }
     ]).select("*, profiles(username)");
@@ -84,14 +86,27 @@ export default function Dashboard() {
     if (error) {
       alert("Error posting: " + error.message);
     } else if (data) {
+      // Instantly add the new post to the top of the feed
       setPosts([data[0], ...posts]);
       setNewPost("");
     }
     setIsPosting(false);
   };
 
+  // Helper function to format dates nicely (e.g., "2m ago")
+  const formatTime = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+    
+    if (diffInSeconds < 60) return `${diffInSeconds}s ago`;
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+    return `${Math.floor(diffInSeconds / 86400)}d ago`;
+  };
+
   if (loading) {
-    return <div className="min-h-screen bg-[#0a0a0a] text-white flex items-center justify-center">Loading...</div>;
+    return <div className="min-h-screen bg-[#0a0a0a] text-white flex items-center justify-center">Loading Aeris...</div>;
   }
 
   // --- PROFILE SETUP SCREEN ---
@@ -139,10 +154,11 @@ export default function Dashboard() {
   // --- MAIN DASHBOARD FEED ---
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white">
+      
+      {/* Top Navigation */}
       <nav className="border-b border-white/10 bg-black/50 backdrop-blur-md sticky top-0 z-50">
-        <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
+        <div className="max-w-2xl mx-auto px-4 h-16 flex items-center justify-between">
           
-          {/* Logo (Text Only) */}
           <div className="flex items-center">
             <h1 className="text-2xl font-bold tracking-widest uppercase bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-blue-400">
               Aeris
@@ -158,18 +174,24 @@ export default function Dashboard() {
         </div>
       </nav>
 
-      <main className="max-w-4xl mx-auto px-4 py-8 space-y-6">
+      {/* Feed Area */}
+      <main className="max-w-2xl mx-auto px-4 py-8 space-y-6">
         
         {/* Create Post Box */}
-        <div className="bg-white/5 border border-white/10 rounded-xl p-4 backdrop-blur-sm">
-          <textarea 
-            value={newPost}
-            onChange={(e) => setNewPost(e.target.value)}
-            placeholder="What's on your mind?" 
-            className="w-full bg-transparent text-white placeholder-gray-500 resize-none outline-none text-lg"
-            rows={3}
-          />
-          <div className="flex justify-end mt-4">
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-4 backdrop-blur-sm">
+          <div className="flex gap-3">
+            <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center border border-purple-500/30 flex-shrink-0">
+              <span className="text-purple-400 font-bold">{profile.username.charAt(0).toUpperCase()}</span>
+            </div>
+            <textarea 
+              value={newPost}
+              onChange={(e) => setNewPost(e.target.value)}
+              placeholder="What's on your mind?" 
+              className="w-full bg-transparent text-white placeholder-gray-500 resize-none outline-none text-lg pt-2"
+              rows={2}
+            />
+          </div>
+          <div className="flex justify-end mt-2">
             <button 
               onClick={handleCreatePost}
               disabled={isPosting || !newPost.trim()}
@@ -187,7 +209,7 @@ export default function Dashboard() {
           </div>
         ) : (
           posts.map((post) => (
-            <div key={post.id} className="bg-white/5 border border-white/10 rounded-xl p-6 backdrop-blur-sm">
+            <div key={post.id} className="bg-white/5 border border-white/10 rounded-2xl p-6 backdrop-blur-sm hover:bg-white/[0.07] transition-colors">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center border border-purple-500/30">
                   <span className="text-purple-400 font-bold">
@@ -196,10 +218,10 @@ export default function Dashboard() {
                 </div>
                 <div>
                   <p className="font-semibold text-white">@{post.profiles?.username || "unknown"}</p>
-                  <p className="text-xs text-gray-500">Just now</p>
+                  <p className="text-xs text-gray-500">{formatTime(post.created_at)}</p>
                 </div>
               </div>
-              <p className="text-gray-300">{post.content}</p>
+              <p className="text-gray-200 text-lg leading-relaxed">{post.content}</p>
             </div>
           ))
         )}
