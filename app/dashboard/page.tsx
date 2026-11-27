@@ -14,7 +14,6 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [isPosting, setIsPosting] = useState(false);
   
-  // New states for comments
   const [activeCommentPost, setActiveCommentPost] = useState<string | null>(null);
   const [commentText, setCommentText] = useState("");
   const [isCommenting, setIsCommenting] = useState(false);
@@ -41,7 +40,6 @@ export default function Dashboard() {
         
         setProfile(profileData);
         
-        // Fetch posts, likes, AND comments (Fixed the join syntax)
         const { data: postsData, error } = await supabase
           .from("posts")
           .select("*, profiles!posts_user_id_fkey(username), likes(user_id), comments(*, profiles(username))")
@@ -195,7 +193,6 @@ export default function Dashboard() {
 
       <main className="max-w-2xl mx-auto px-4 py-8 space-y-6">
         
-        {/* Create Post Box */}
         <div className="bg-white/5 border border-white/10 rounded-2xl p-4 backdrop-blur-sm">
           <div className="flex gap-3">
             <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center border border-purple-500/30 flex-shrink-0">
@@ -205,9 +202,9 @@ export default function Dashboard() {
           </div>
 
           {imagePreview && (
-            <div className="mt-3 relative w-full h-48 rounded-xl overflow-hidden border border-white/10">
+            <div className="mt-3 relative w-full h-48 rounded-xl overflow-hidden border border-white/10 z-[10000]">
               <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
-              <button onClick={() => { setImageFile(null); setImagePreview(null); }} className="absolute top-2 right-2 bg-black/60 text-white rounded-full p-1 text-xs hover:bg-black/80">✕</button>
+              <button onClick={() => { setImageFile(null); setImagePreview(null); }} className="absolute top-2 right-2 bg-black/60 text-white rounded-full p-1 text-xs hover:bg-black/80 z-[10001]">✕</button>
             </div>
           )}
 
@@ -221,7 +218,6 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Feed */}
         {posts.length === 0 ? (
           <div className="text-center text-gray-500 py-10">No posts yet. Be the first to post something!</div>
         ) : (
@@ -245,12 +241,11 @@ export default function Dashboard() {
                 {post.content && <p className="text-gray-200 text-lg leading-relaxed mb-3">{post.content}</p>}
                 
                 {post.image_url && (
-                  <div className="mt-3 rounded-xl overflow-hidden border border-white/10 mb-4">
+                  <div className="mt-3 rounded-xl overflow-hidden border border-white/10 mb-4 relative z-[10000]">
                     <img src={post.image_url} alt="Post content" className="w-full h-auto max-h-[500px] object-cover" />
                   </div>
                 )}
 
-                {/* Like, Comment, Share Buttons */}
                 <div className="flex items-center gap-6 mt-4 pt-4 border-t border-white/10">
                   <button onClick={() => handleLike(post.id)} className={`flex items-center gap-2 transition-colors ${hasLiked ? 'text-red-500' : 'text-gray-400 hover:text-red-400'}`}>
                     <svg xmlns="http://www.w3.org/2000/svg" fill={hasLiked ? "currentColor" : "none"} viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" /></svg>
@@ -268,7 +263,6 @@ export default function Dashboard() {
                   </button>
                 </div>
 
-                {/* COMMENTS SECTION */}
                 {post.comments && post.comments.length > 0 && (
                   <div className="mt-4 pt-4 border-t border-white/5 space-y-3">
                     {post.comments.map((comment: any) => (
@@ -285,7 +279,6 @@ export default function Dashboard() {
                   </div>
                 )}
 
-                {/* ADD COMMENT INPUT */}
                 {activeCommentPost === post.id && (
                   <div className="mt-3 flex gap-2">
                     <input 
