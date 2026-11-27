@@ -9,8 +9,8 @@ export default function Dashboard() {
   const [profile, setProfile] = useState<any>(null);
   const [posts, setPosts] = useState<any[]>([]); 
   const [newPost, setNewPost] = useState(""); 
-  const [imageFile, setImageFile] = useState<File | null>(null); // New state for image
-  const [imagePreview, setImagePreview] = useState<string | null>(null); // New state for preview
+  const [imageFile, setImageFile] = useState<File | null>(null); 
+  const [imagePreview, setImagePreview] = useState<string | null>(null); 
   const [loading, setLoading] = useState(true);
   const [isPosting, setIsPosting] = useState(false);
   
@@ -36,10 +36,10 @@ export default function Dashboard() {
         
         setProfile(profileData);
         
-        // Fetch posts (using the new schema)
+        // Fetch posts with explicit foreign key relation
         const { data: postsData } = await supabase
           .from("posts")
-          .select("*, profiles(username)")
+          .select("*, profiles!posts_user_id_fkey(username)")
           .order("created_at", { ascending: false });
 
         if (postsData) setPosts(postsData);
@@ -80,13 +80,12 @@ export default function Dashboard() {
   };
 
   const handleCreatePost = async () => {
-    if (!newPost.trim() && !imageFile) return; // Require either text or image
+    if (!newPost.trim() && !imageFile) return; 
     
     setIsPosting(true);
     let uploadedImageUrl = null;
 
     try {
-      // 1. Upload image if one exists
       if (imageFile) {
         const fileExt = imageFile.name.split('.').pop();
         const fileName = `${Math.random()}.${fileExt}`;
@@ -98,7 +97,6 @@ export default function Dashboard() {
 
         if (uploadError) throw uploadError;
 
-        // 2. Get public URL for the image
         const { data: { publicUrl } } = supabase.storage
           .from("post-images")
           .getPublicUrl(filePath);
@@ -106,14 +104,14 @@ export default function Dashboard() {
         uploadedImageUrl = publicUrl;
       }
 
-      // 3. Insert post into database
+      // Insert post with explicit foreign key relation
       const { data, error } = await supabase.from("posts").insert([
         { 
           content: newPost, 
           image_url: uploadedImageUrl, 
           user_id: user.id 
         }
-      ]).select("*, profiles(username)");
+      ]).select("*, profiles!posts_user_id_fkey(username)");
 
       if (error) throw error;
 
@@ -184,7 +182,6 @@ export default function Dashboard() {
 
       <main className="max-w-2xl mx-auto px-4 py-8 space-y-6">
         
-        {/* Create Post Box */}
         <div className="bg-white/5 border border-white/10 rounded-2xl p-4 backdrop-blur-sm">
           <div className="flex gap-3">
             <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center border border-purple-500/30 flex-shrink-0">
@@ -199,7 +196,6 @@ export default function Dashboard() {
             />
           </div>
 
-          {/* Image Preview */}
           {imagePreview && (
             <div className="mt-3 relative w-full h-48 rounded-xl overflow-hidden border border-white/10">
               <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
@@ -213,7 +209,6 @@ export default function Dashboard() {
           )}
 
           <div className="flex justify-between items-center mt-4 border-t border-white/10 pt-3">
-            {/* Image Upload Button */}
             <label className="cursor-pointer text-purple-400 hover:text-purple-300 transition-colors flex items-center gap-2">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
                 <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
@@ -237,7 +232,6 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Feed */}
         {posts.length === 0 ? (
           <div className="text-center text-gray-500 py-10">No posts yet. Be the first to post something!</div>
         ) : (
