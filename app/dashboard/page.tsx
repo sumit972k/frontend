@@ -36,10 +36,10 @@ export default function Dashboard() {
         
         setProfile(profileData);
         
-        // Fetch posts with explicit foreign key relation
+        // Fetch posts with explicit relation
         const { data: postsData } = await supabase
           .from("posts")
-          .select("*, profiles!posts_user_id_fkey(username)")
+          .select("*, profiles!posts_user_id_fkey(username), likes(user_id)")
           .order("created_at", { ascending: false });
 
         if (postsData) setPosts(postsData);
@@ -104,14 +104,13 @@ export default function Dashboard() {
         uploadedImageUrl = publicUrl;
       }
 
-      // Insert post with explicit foreign key relation
       const { data, error } = await supabase.from("posts").insert([
         { 
           content: newPost, 
           image_url: uploadedImageUrl, 
           user_id: user.id 
         }
-      ]).select("*, profiles!posts_user_id_fkey(username)");
+      ]).select("*, profiles!posts_user_id_fkey(username), likes(user_id)");
 
       if (error) throw error;
 
@@ -125,6 +124,36 @@ export default function Dashboard() {
       alert("Error posting: " + error.message);
     } finally {
       setIsPosting(false);
+    }
+  };
+
+  const handleLike = async (postId: string) => {
+    // Find the post in state
+    const post = posts.find(p => p.id === postId);
+    if (!post) return;
+
+    // Check if we already liked it
+    const hasLiked = post.likes.some((like: any) => like.user_id === user.id);
+
+    if (hasLiked) {
+      // Unlike
+      const { error } = await supabase
+        .from("likes")
+        .delete()
+        .match({ user_id: user.id, post_id: postId });
+
+      if (!error) {
+        setPosts(posts.map(p => p.id === postId ? { ...p, likes: p.likes.filter((l: any) => l.user_id !== user.id) } : p));
+      }
+    } else {
+      // Like
+      const { error } = await supabase
+        .from("likes")
+        .insert([{ user_id: user.id, post_id: postId }]);
+
+      if (!error) {
+        setPosts(posts.map(p => p.id === postId ? { ...p, likes: [...p.likes, { user_id: user.id }] } : p));
+      }
     }
   };
 
@@ -182,6 +211,7 @@ export default function Dashboard() {
 
       <main className="max-w-2xl mx-auto px-4 py-8 space-y-6">
         
+        {/* Create Post Box */}
         <div className="bg-white/5 border border-white/10 rounded-2xl p-4 backdrop-blur-sm">
           <div className="flex gap-3">
             <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center border border-purple-500/30 flex-shrink-0">
@@ -232,32 +262,65 @@ export default function Dashboard() {
           </div>
         </div>
 
+        {/* Feed */}
         {posts.length === 0 ? (
           <div className="text-center text-gray-500 py-10">No posts yet. Be the first to post something!</div>
         ) : (
-          posts.map((post) => (
-            <div key={post.id} className="bg-white/5 border border-white/10 rounded-2xl p-6 backdrop-blur-sm hover:bg-white/[0.07] transition-colors">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center border border-purple-500/30">
-                  <span className="text-purple-400 font-bold">
-                    {post.profiles?.username?.charAt(0).toUpperCase() || "U"}
-                  </span>
+          posts.map((post) => {
+            const hasLiked = post.likes.some((like: any) => like.user_id === user.id);
+            const likeCount = post.likes.length;
+
+            return (
+              <div key={post.id} className="bg-white/5 border border-white/10 rounded-2xl p-6 backdrop-blur-sm hover:bg-white/[0.07] transition-colors">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center border border-purple-500/30">
+                    <span className="text-purple-400 font-bold">
+                      {post.profiles?.username?.charAt(0).toUpperCase() || "U"}
+                    </span>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-white">@{post.profiles?.username || "unknown"}</p>
+                    <p className="text-xs text-gray-500">{formatTime(post.created_at)}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="font-semibold text-white">@{post.profiles?.username || "unknown"}</p>
-                  <p className="text-xs text-gray-500">{formatTime(post.created_at)}</p>
+                
+                {post.content && <p className="text-gray-200 text-lg leading-relaxed mb-3">{post.content}</p>}
+                
+                {post.image_url && (
+                  <div className="mt-3 rounded-xl overflow-hidden border border-white/10 mb-4">
+                    <img src={post.image_url} alt="Post content" className="w-full h-auto max-h-[500px] object-cover" />
+                  </div>
+                )}
+
+                {/* Like and Comment Buttons */}
+                <div className="flex items-center gap-6 mt-4 pt-4 border-t border-white/10">
+                  <button 
+                    onClick={() => handleLike(post.id)}
+                    className={`flex items-center gap-2 transition-colors ${hasLiked ? 'text-red-500' : 'text-gray-400 hover:text-red-400'}`}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill={hasLiked ? "currentColor" : "none"} viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" />
+                    </svg>
+                    <span className="text-sm font-medium">{likeCount > 0 ? likeCount : ""} Like</span>
+                  </button>
+
+                  <button className="flex items-center gap-2 text-gray-400 hover:text-blue-400 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 20.25c4.97 0 9-3.694 9-8.25s-4.03-8.25-9-8.25S3 7.444 3 12c0 2.104.859 4.023 2.273 5.48.432.447.74 1.04.586 1.641a4.483 4.483 0 0 1-.923 1.785A5.969 5.969 0 0 0 6 21c1.282 0 2.47-.402 3.445-1.087.81.22 1.668.337 2.555.337Z" />
+                    </svg>
+                    <span className="text-sm font-medium">Comment</span>
+                  </button>
+
+                  <button className="flex items-center gap-2 text-gray-400 hover:text-green-400 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0 0a2.25 2.25 0 1 0 3.935 2.186 2.25 2.25 0 0 0-3.935-2.186Zm0-12.814a2.25 2.25 0 1 0 3.933-2.185 2.25 2.25 0 0 0-3.933 2.185Z" />
+                    </svg>
+                    <span className="text-sm font-medium">Share</span>
+                  </button>
                 </div>
               </div>
-              
-              {post.content && <p className="text-gray-200 text-lg leading-relaxed mb-3">{post.content}</p>}
-              
-              {post.image_url && (
-                <div className="mt-3 rounded-xl overflow-hidden border border-white/10">
-                  <img src={post.image_url} alt="Post content" className="w-full h-auto max-h-[500px] object-cover" />
-                </div>
-              )}
-            </div>
-          ))
+            );
+          })
         )}
       </main>
     </div>
