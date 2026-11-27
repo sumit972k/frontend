@@ -14,6 +14,11 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [isPosting, setIsPosting] = useState(false);
   
+  // New states for comments
+  const [activeCommentPost, setActiveCommentPost] = useState<string | null>(null);
+  const [commentText, setCommentText] = useState("");
+  const [isCommenting, setIsCommenting] = useState(false);
+
   const [setupUsername, setSetupUsername] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
@@ -36,10 +41,10 @@ export default function Dashboard() {
         
         setProfile(profileData);
         
-        // Fetch posts with explicit relation
+        // Fetch posts, likes, AND comments
         const { data: postsData } = await supabase
           .from("posts")
-          .select("*, profiles!posts_user_id_fkey(username), likes(user_id)")
+          .select("*, profiles!posts_user_id_fkey(username), likes(user_id), comments(*, profiles!comments_user_id_fkey(username))")
           .order("created_at", { ascending: false });
 
         if (postsData) setPosts(postsData);
@@ -57,14 +62,9 @@ export default function Dashboard() {
   const saveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
-    
-    const { error } = await supabase.from("profiles").insert([
-      { id: user.id, username: setupUsername }
-    ]);
-
-    if (error) {
-      alert("Error saving profile: " + error.message);
-    } else {
+    const { error } = await supabase.from("profiles").insert([{ id: user.id, username: setupUsername }]);
+    if (error) { alert("Error saving profile: " + error.message); } 
+    else {
       const { data } = await supabase.from("profiles").select("*").eq("id", user.id).single();
       setProfile(data);
     }
@@ -81,7 +81,6 @@ export default function Dashboard() {
 
   const handleCreatePost = async () => {
     if (!newPost.trim() && !imageFile) return; 
-    
     setIsPosting(true);
     let uploadedImageUrl = null;
 
@@ -90,71 +89,62 @@ export default function Dashboard() {
         const fileExt = imageFile.name.split('.').pop();
         const fileName = `${Math.random()}.${fileExt}`;
         const filePath = `${user.id}/${fileName}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from("post-images")
-          .upload(filePath, imageFile);
-
+        const { error: uploadError } = await supabase.storage.from("post-images").upload(filePath, imageFile);
         if (uploadError) throw uploadError;
-
-        const { data: { publicUrl } } = supabase.storage
-          .from("post-images")
-          .getPublicUrl(filePath);
-          
+        const { data: { publicUrl } } = supabase.storage.from("post-images").getPublicUrl(filePath);
         uploadedImageUrl = publicUrl;
       }
 
-      const { data, error } = await supabase.from("posts").insert([
-        { 
-          content: newPost, 
-          image_url: uploadedImageUrl, 
-          user_id: user.id 
-        }
-      ]).select("*, profiles!posts_user_id_fkey(username), likes(user_id)");
+      const { data, error } = await supabase.from("posts").insert([{ content: newPost, image_url: uploadedImageUrl, user_id: user.id }])
+        .select("*, profiles!posts_user_id_fkey(username), likes(user_id), comments(*, profiles!comments_user_id_fkey(username))");
 
       if (error) throw error;
-
       if (data) {
         setPosts([data[0], ...posts]);
         setNewPost("");
         setImageFile(null);
         setImagePreview(null);
       }
-    } catch (error: any) {
-      alert("Error posting: " + error.message);
-    } finally {
-      setIsPosting(false);
-    }
+    } catch (error: any) { alert("Error posting: " + error.message); } finally { setIsPosting(false); }
   };
 
   const handleLike = async (postId: string) => {
-    // Find the post in state
     const post = posts.find(p => p.id === postId);
     if (!post) return;
-
-    // Check if we already liked it
     const hasLiked = post.likes.some((like: any) => like.user_id === user.id);
 
     if (hasLiked) {
-      // Unlike
-      const { error } = await supabase
-        .from("likes")
-        .delete()
-        .match({ user_id: user.id, post_id: postId });
-
-      if (!error) {
-        setPosts(posts.map(p => p.id === postId ? { ...p, likes: p.likes.filter((l: any) => l.user_id !== user.id) } : p));
-      }
+      const { error } = await supabase.from("likes").delete().match({ user_id: user.id, post_id: postId });
+      if (!error) setPosts(posts.map(p => p.id === postId ? { ...p, likes: p.likes.filter((l: any) => l.user_id !== user.id) } : p));
     } else {
-      // Like
-      const { error } = await supabase
-        .from("likes")
-        .insert([{ user_id: user.id, post_id: postId }]);
-
-      if (!error) {
-        setPosts(posts.map(p => p.id === postId ? { ...p, likes: [...p.likes, { user_id: user.id }] } : p));
-      }
+      const { error } = await supabase.from("likes").insert([{ user_id: user.id, post_id: postId }]);
+      if (!error) setPosts(posts.map(p => p.id === postId ? { ...p, likes: [...p.likes, { user_id: user.id }] } : p));
     }
+  };
+
+  // New function to handle adding a comment
+  const handleAddComment = async (postId: string) => {
+    if (!commentText.trim()) return;
+    setIsCommenting(true);
+
+    const { data, error } = await supabase.from("comments").insert([
+      { post_id: postId, user_id: user.id, content: commentText }
+    ]).select("*, profiles!comments_user_id_fkey(username)");
+
+    if (error) {
+      alert("Error adding comment: " + error.message);
+    } else if (data) {
+      // Update the specific post with the new comment
+      setPosts(posts.map(p => {
+        if (p.id === postId) {
+          return { ...p, comments: [...(p.comments || []), data[0]] };
+        }
+        return p;
+      }));
+      setCommentText("");
+      setActiveCommentPost(null); // Close the comment input
+    }
+    setIsCommenting(false);
   };
 
   const formatTime = (dateString: string) => {
@@ -179,18 +169,9 @@ export default function Dashboard() {
           <form onSubmit={saveProfile} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">Username</label>
-              <input 
-                type="text" 
-                value={setupUsername}
-                onChange={(e) => setSetupUsername(e.target.value)}
-                placeholder="e.g. aeris404" 
-                required
-                className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500 transition-colors"
-              />
+              <input type="text" value={setupUsername} onChange={(e) => setSetupUsername(e.target.value)} placeholder="e.g. aeris404" required className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500 transition-colors" />
             </div>
-            <button type="submit" disabled={isSaving} className="w-full bg-white text-black font-semibold py-2.5 rounded-lg hover:bg-gray-200 transition-colors mt-4 disabled:opacity-50">
-              {isSaving ? "Saving..." : "Enter App"}
-            </button>
+            <button type="submit" disabled={isSaving} className="w-full bg-white text-black font-semibold py-2.5 rounded-lg hover:bg-gray-200 transition-colors mt-4 disabled:opacity-50">{isSaving ? "Saving..." : "Enter App"}</button>
           </form>
         </div>
       </div>
@@ -217,48 +198,23 @@ export default function Dashboard() {
             <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center border border-purple-500/30 flex-shrink-0">
               <span className="text-purple-400 font-bold">{profile.username.charAt(0).toUpperCase()}</span>
             </div>
-            <textarea 
-              value={newPost}
-              onChange={(e) => setNewPost(e.target.value)}
-              placeholder="What's on your mind?" 
-              className="w-full bg-transparent text-white placeholder-gray-500 resize-none outline-none text-lg pt-2"
-              rows={2}
-            />
+            <textarea value={newPost} onChange={(e) => setNewPost(e.target.value)} placeholder="What's on your mind?" className="w-full bg-transparent text-white placeholder-gray-500 resize-none outline-none text-lg pt-2" rows={2} />
           </div>
 
           {imagePreview && (
             <div className="mt-3 relative w-full h-48 rounded-xl overflow-hidden border border-white/10">
               <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
-              <button 
-                onClick={() => { setImageFile(null); setImagePreview(null); }}
-                className="absolute top-2 right-2 bg-black/60 text-white rounded-full p-1 text-xs hover:bg-black/80"
-              >
-                ✕
-              </button>
+              <button onClick={() => { setImageFile(null); setImagePreview(null); }} className="absolute top-2 right-2 bg-black/60 text-white rounded-full p-1 text-xs hover:bg-black/80">✕</button>
             </div>
           )}
 
           <div className="flex justify-between items-center mt-4 border-t border-white/10 pt-3">
             <label className="cursor-pointer text-purple-400 hover:text-purple-300 transition-colors flex items-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
-                <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
-              </svg>
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" /></svg>
               <span className="text-sm font-medium">Photo</span>
-              <input 
-                type="file" 
-                accept="image/*" 
-                onChange={handleImageChange}
-                className="hidden" 
-              />
+              <input type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
             </label>
-
-            <button 
-              onClick={handleCreatePost}
-              disabled={isPosting || (!newPost.trim() && !imageFile)}
-              className="px-6 py-2 bg-white text-black font-semibold rounded-full hover:bg-gray-200 transition-colors disabled:opacity-50"
-            >
-              {isPosting ? "Posting..." : "Post"}
-            </button>
+            <button onClick={handleCreatePost} disabled={isPosting || (!newPost.trim() && !imageFile)} className="px-6 py-2 bg-white text-black font-semibold rounded-full hover:bg-gray-200 transition-colors disabled:opacity-50">{isPosting ? "Posting..." : "Post"}</button>
           </div>
         </div>
 
@@ -269,14 +225,13 @@ export default function Dashboard() {
           posts.map((post) => {
             const hasLiked = post.likes.some((like: any) => like.user_id === user.id);
             const likeCount = post.likes.length;
+            const commentCount = post.comments?.length || 0;
 
             return (
               <div key={post.id} className="bg-white/5 border border-white/10 rounded-2xl p-6 backdrop-blur-sm hover:bg-white/[0.07] transition-colors">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center border border-purple-500/30">
-                    <span className="text-purple-400 font-bold">
-                      {post.profiles?.username?.charAt(0).toUpperCase() || "U"}
-                    </span>
+                    <span className="text-purple-400 font-bold">{post.profiles?.username?.charAt(0).toUpperCase() || "U"}</span>
                   </div>
                   <div>
                     <p className="font-semibold text-white">@{post.profiles?.username || "unknown"}</p>
@@ -292,32 +247,62 @@ export default function Dashboard() {
                   </div>
                 )}
 
-                {/* Like and Comment Buttons */}
+                {/* Like, Comment, Share Buttons */}
                 <div className="flex items-center gap-6 mt-4 pt-4 border-t border-white/10">
-                  <button 
-                    onClick={() => handleLike(post.id)}
-                    className={`flex items-center gap-2 transition-colors ${hasLiked ? 'text-red-500' : 'text-gray-400 hover:text-red-400'}`}
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" fill={hasLiked ? "currentColor" : "none"} viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" />
-                    </svg>
+                  <button onClick={() => handleLike(post.id)} className={`flex items-center gap-2 transition-colors ${hasLiked ? 'text-red-500' : 'text-gray-400 hover:text-red-400'}`}>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill={hasLiked ? "currentColor" : "none"} viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" /></svg>
                     <span className="text-sm font-medium">{likeCount > 0 ? likeCount : ""} Like</span>
                   </button>
 
-                  <button className="flex items-center gap-2 text-gray-400 hover:text-blue-400 transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 20.25c4.97 0 9-3.694 9-8.25s-4.03-8.25-9-8.25S3 7.444 3 12c0 2.104.859 4.023 2.273 5.48.432.447.74 1.04.586 1.641a4.483 4.483 0 0 1-.923 1.785A5.969 5.969 0 0 0 6 21c1.282 0 2.47-.402 3.445-1.087.81.22 1.668.337 2.555.337Z" />
-                    </svg>
-                    <span className="text-sm font-medium">Comment</span>
+                  <button onClick={() => setActiveCommentPost(activeCommentPost === post.id ? null : post.id)} className={`flex items-center gap-2 transition-colors ${activeCommentPost === post.id ? 'text-blue-400' : 'text-gray-400 hover:text-blue-400'}`}>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M12 20.25c4.97 0 9-3.694 9-8.25s-4.03-8.25-9-8.25S3 7.444 3 12c0 2.104.859 4.023 2.273 5.48.432.447.74 1.04.586 1.641a4.483 4.483 0 0 1-.923 1.785A5.969 5.969 0 0 0 6 21c1.282 0 2.47-.402 3.445-1.087.81.22 1.668.337 2.555.337Z" /></svg>
+                    <span className="text-sm font-medium">{commentCount > 0 ? commentCount : ""} Comment</span>
                   </button>
 
                   <button className="flex items-center gap-2 text-gray-400 hover:text-green-400 transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0 0a2.25 2.25 0 1 0 3.935 2.186 2.25 2.25 0 0 0-3.935-2.186Zm0-12.814a2.25 2.25 0 1 0 3.933-2.185 2.25 2.25 0 0 0-3.933 2.185Z" />
-                    </svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0 0a2.25 2.25 0 1 0 3.935 2.186 2.25 2.25 0 0 0-3.935-2.186Zm0-12.814a2.25 2.25 0 1 0 3.933-2.185 2.25 2.25 0 0 0-3.933 2.185Z" /></svg>
                     <span className="text-sm font-medium">Share</span>
                   </button>
                 </div>
+
+                {/* COMMENTS SECTION */}
+                {post.comments && post.comments.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-white/5 space-y-3">
+                    {post.comments.map((comment: any) => (
+                      <div key={comment.id} className="flex gap-3">
+                        <div className="w-6 h-6 rounded-full bg-gray-500/20 flex items-center justify-center border border-white/10 flex-shrink-0">
+                          <span className="text-gray-400 text-xs font-bold">{comment.profiles?.username?.charAt(0).toUpperCase() || "U"}</span>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-400 font-semibold mb-0.5">@{comment.profiles?.username || "user"}</p>
+                          <p className="text-sm text-gray-300">{comment.content}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* ADD COMMENT INPUT */}
+                {activeCommentPost === post.id && (
+                  <div className="mt-3 flex gap-2">
+                    <input 
+                      type="text" 
+                      value={commentText}
+                      onChange={(e) => setCommentText(e.target.value)}
+                      placeholder="Write a comment..." 
+                      className="flex-1 bg-black/50 border border-white/10 rounded-full px-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500 transition-colors"
+                      autoFocus
+                    />
+                    <button 
+                      onClick={() => handleAddComment(post.id)}
+                      disabled={isCommenting || !commentText.trim()}
+                      className="px-4 py-2 bg-blue-500 text-white text-sm font-semibold rounded-full hover:bg-blue-600 transition-colors disabled:opacity-50"
+                    >
+                      {isCommenting ? "..." : "Reply"}
+                    </button>
+                  </div>
+                )}
+
               </div>
             );
           })
