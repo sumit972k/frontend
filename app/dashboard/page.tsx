@@ -27,7 +27,6 @@ export default function Dashboard() {
       } else {
         setUser(session.user);
         
-        // Fetch user profile
         const { data: profileData } = await supabase
           .from("profiles")
           .select("*")
@@ -36,7 +35,6 @@ export default function Dashboard() {
         
         setProfile(profileData);
         
-        // Fetch all posts and join with the profiles table
         const { data: postsData } = await supabase
           .from("posts")
           .select("*, profiles(username)")
@@ -59,7 +57,6 @@ export default function Dashboard() {
     e.preventDefault();
     setIsSaving(true);
     
-    // We only insert the username now, bio will be added later
     const { error } = await supabase.from("profiles").insert([
       { id: user.id, username: setupUsername }
     ]);
@@ -123,7 +120,7 @@ export default function Dashboard() {
                 type="text" 
                 value={setupUsername}
                 onChange={(e) => setSetupUsername(e.target.value)}
-                placeholder="e.g. sumit_cs" 
+                placeholder="e.g. aeris404" 
                 required
                 className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500 transition-colors"
               />
@@ -152,7 +149,9 @@ export default function Dashboard() {
           </div>
 
           <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-300 font-medium">@{profile.username}</span>
+            <button onClick={() => router.push("/dashboard/profile")} className="text-sm text-gray-300 font-medium hover:text-white transition-colors">
+              @{profile.username}
+            </button>
             <button onClick={handleLogout} className="text-sm text-red-400 hover:text-red-300 transition-colors">
               Logout
             </button>
