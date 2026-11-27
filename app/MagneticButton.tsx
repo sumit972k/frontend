@@ -19,17 +19,15 @@ export default function MagneticButton({
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isHovered, setIsHovered] = useState(false);
 
+  // Desktop: Magnetic Hover Effect
   const handleMouseMove = (e: React.MouseEvent<HTMLButtonElement>) => {
     if (!ref.current) return;
     const { clientX, clientY } = e;
     const { height, width, left, top } = ref.current.getBoundingClientRect();
     
-    // Magnetic effect
     const middleX = clientX - (left + width / 2);
     const middleY = clientY - (top + height / 2);
     setPosition({ x: middleX * 0.3, y: middleY * 0.3 });
-
-    // Glow effect inside the button
     setMousePosition({ x: clientX - left, y: clientY - top });
   };
 
@@ -38,7 +36,6 @@ export default function MagneticButton({
     setIsHovered(false);
   };
 
-  // The hover:scale-105 adds the smooth grow effect you asked for
   const baseClass = "relative px-8 py-3 rounded-full font-semibold transition-all duration-300 overflow-hidden cursor-pointer hover:scale-105 hover:shadow-[0_0_25px_rgba(168,85,247,0.3)]";
   
   const styles = variant === "primary" 
@@ -51,13 +48,17 @@ export default function MagneticButton({
       onMouseMove={handleMouseMove}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={reset}
+      // Desktop animation
       animate={{ x: position.x, y: position.y }}
       transition={{ type: "spring", stiffness: 150, damping: 15, mass: 0.1 }}
+      // Mobile sliding effect: Allows the button to be dragged
+      drag
+      dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }} // Snaps back to center
+      dragElastic={0.5} // How much it stretches when dragged
       whileTap={{ scale: 0.95 }}
       className={`${baseClass} ${styles} ${className}`}
       {...props}
     >
-      {/* The Spotlight Glow inside the button */}
       {isHovered && (
         <motion.div
           className="absolute pointer-events-none w-24 h-24 rounded-full blur-xl"
