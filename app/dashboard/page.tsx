@@ -41,11 +41,16 @@ export default function Dashboard() {
         
         setProfile(profileData);
         
-        // Fetch posts, likes, AND comments
-        const { data: postsData } = await supabase
+        // Fetch posts, likes, AND comments (Fixed the join syntax)
+        const { data: postsData, error } = await supabase
           .from("posts")
-          .select("*, profiles!posts_user_id_fkey(username), likes(user_id), comments(*, profiles!comments_user_id_fkey(username))")
+          .select("*, profiles!posts_user_id_fkey(username), likes(user_id), comments(*, profiles(username))")
           .order("created_at", { ascending: false });
+
+        if (error) {
+          console.error("Error fetching posts:", error);
+          alert("Error loading feed: " + error.message);
+        }
 
         if (postsData) setPosts(postsData);
         setLoading(false);
@@ -96,7 +101,7 @@ export default function Dashboard() {
       }
 
       const { data, error } = await supabase.from("posts").insert([{ content: newPost, image_url: uploadedImageUrl, user_id: user.id }])
-        .select("*, profiles!posts_user_id_fkey(username), likes(user_id), comments(*, profiles!comments_user_id_fkey(username))");
+        .select("*, profiles!posts_user_id_fkey(username), likes(user_id), comments(*, profiles(username))");
 
       if (error) throw error;
       if (data) {
@@ -122,19 +127,17 @@ export default function Dashboard() {
     }
   };
 
-  // New function to handle adding a comment
   const handleAddComment = async (postId: string) => {
     if (!commentText.trim()) return;
     setIsCommenting(true);
 
     const { data, error } = await supabase.from("comments").insert([
       { post_id: postId, user_id: user.id, content: commentText }
-    ]).select("*, profiles!comments_user_id_fkey(username)");
+    ]).select("*, profiles(username)");
 
     if (error) {
       alert("Error adding comment: " + error.message);
     } else if (data) {
-      // Update the specific post with the new comment
       setPosts(posts.map(p => {
         if (p.id === postId) {
           return { ...p, comments: [...(p.comments || []), data[0]] };
@@ -142,7 +145,7 @@ export default function Dashboard() {
         return p;
       }));
       setCommentText("");
-      setActiveCommentPost(null); // Close the comment input
+      setActiveCommentPost(null);
     }
     setIsCommenting(false);
   };
@@ -223,8 +226,8 @@ export default function Dashboard() {
           <div className="text-center text-gray-500 py-10">No posts yet. Be the first to post something!</div>
         ) : (
           posts.map((post) => {
-            const hasLiked = post.likes.some((like: any) => like.user_id === user.id);
-            const likeCount = post.likes.length;
+            const hasLiked = post.likes?.some((like: any) => like.user_id === user.id);
+            const likeCount = post.likes?.length || 0;
             const commentCount = post.comments?.length || 0;
 
             return (
